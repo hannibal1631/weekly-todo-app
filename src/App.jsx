@@ -117,7 +117,7 @@ const App = () => {
   console.log('Selected day:', selectedDay);
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-6'>
+    <div className='flex justify-center items-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-6'>
       <div className='max-w-5xl mx-auto'>
         <h1 className='text-3xl font-bold text-indigo-800 mb-8 text-center'>
           Weekly Todo App
