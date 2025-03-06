@@ -80,7 +80,7 @@ const TodoForm = ({ addTodo }) => {
 
   return (
     <form onSubmit={handleSubmit} className='mb-6'>
-      <div className='flex items-center gap-2'>
+      <div className='flex justify-center items-center gap-2'>
         <input
           type='text'
           value={text}
