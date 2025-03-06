@@ -1,11 +1,13 @@
-// components/TodoForm.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 
 const TodoForm = ({ addTodo }) => {
   const [text, setText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
+  const silenceTimerRef = useRef(null);
+  const lastSpeechRef = useRef(Date.now());
+  const previousTranscriptRef = useRef('');
 
   useEffect(() => {
     // Initialize speech recognition if supported
@@ -21,12 +23,18 @@ const TodoForm = ({ addTodo }) => {
       recognitionInstance.interimResults = true;
 
       recognitionInstance.onresult = (event) => {
+        // Get the final transcript from the results
         const transcript = Array.from(event.results)
           .map((result) => result[0])
           .map((result) => result.transcript)
           .join('');
 
+        // Update the input field with the transcript
         setText(transcript);
+
+        // Mark that we detected speech and update the timestamp
+        console.log('Speech detected at:', new Date().toISOString());
+        lastSpeechRef.current = Date.now();
       };
 
       recognitionInstance.onerror = (event) => {
@@ -35,19 +43,75 @@ const TodoForm = ({ addTodo }) => {
       };
 
       recognitionInstance.onend = () => {
+        console.log('Recognition ended naturally');
         setIsListening(false);
       };
 
       setRecognition(recognitionInstance);
     }
 
-    // Cleanup function to stop recognition if component unmounts
     return () => {
-      if (recognition && isListening) {
-        recognition.stop();
+      // Cleanup
+      if (silenceTimerRef.current) {
+        clearInterval(silenceTimerRef.current);
+      }
+
+      if (recognition) {
+        try {
+          recognition.stop();
+        } catch (e) {
+          console.error('Error stopping recognition during cleanup', e);
+        }
       }
     };
   }, []);
+
+  // Track when listening state changes to start/stop the silence detection
+  useEffect(() => {
+    // Clear any existing timer when listening state changes
+    if (silenceTimerRef.current) {
+      clearInterval(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+
+    // Set up silence detection when listening is active
+    if (isListening && recognition) {
+      console.log('Starting silence detection timer');
+
+      // Start the timer to check for silence
+      silenceTimerRef.current = setInterval(() => {
+        const timeSinceLastSpeech = Date.now() - lastSpeechRef.current;
+        console.log(
+          'Time since last speech:',
+          Math.floor(timeSinceLastSpeech / 1000),
+          'seconds'
+        );
+
+        // If 5 seconds have passed without speech, stop listening
+        if (timeSinceLastSpeech >= 5000) {
+          console.log('5 seconds of silence detected, stopping recognition');
+
+          try {
+            recognition.stop();
+          } catch (e) {
+            console.error('Error stopping recognition after silence', e);
+          }
+
+          setIsListening(false);
+          clearInterval(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+      }, 1000); // Check every second
+    }
+
+    return () => {
+      // Clean up timer when component unmounts or listening state changes
+      if (silenceTimerRef.current) {
+        clearInterval(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+    };
+  }, [isListening, recognition]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -55,26 +119,44 @@ const TodoForm = ({ addTodo }) => {
     if (text.trim()) {
       addTodo(text);
       setText('');
-
-      // For debugging
       console.log('Adding todo:', text);
     }
   };
 
   const toggleListening = () => {
-    if (!recognition) return;
+    if (!recognition) {
+      console.warn('Speech recognition not available');
+      return;
+    }
 
-    try {
-      if (isListening) {
+    if (isListening) {
+      // Stop listening
+      try {
         recognition.stop();
-        setIsListening(false);
-      } else {
-        recognition.start();
-        setIsListening(true);
+        console.log('Manually stopped recognition');
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
       }
-    } catch (error) {
-      console.error('Error toggling speech recognition:', error);
+
       setIsListening(false);
+
+      if (silenceTimerRef.current) {
+        clearInterval(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+    } else {
+      // Start listening
+      try {
+        // Reset the last speech timestamp to now
+        lastSpeechRef.current = Date.now();
+
+        // Start recognition
+        recognition.start();
+        console.log('Started recognition at:', new Date().toISOString());
+        setIsListening(true);
+      } catch (error) {
+        console.error('Error starting recognition:', error);
+      }
     }
   };
 
@@ -111,7 +193,7 @@ const TodoForm = ({ addTodo }) => {
       </div>
       {isListening && (
         <p className='text-sm text-indigo-600 mt-2 animate-pulse'>
-          Listening... Speak now
+          Listening... Will stop after 5 seconds of silence
         </p>
       )}
     </form>
