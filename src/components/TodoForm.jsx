@@ -162,19 +162,19 @@ const TodoForm = ({ addTodo }) => {
 
   return (
     <form onSubmit={handleSubmit} className='mb-6'>
-      <div className='flex justify-center items-center gap-2'>
+      <div className='w-full flex flex-col md:flex-row justify-center items-center gap-2'>
         <input
           type='text'
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder='Add a new task...'
-          className='flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'
+          className='flex-grow md:w-[85%] w-full justify-center p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'
         />
 
         <button
           type='button'
           onClick={toggleListening}
-          className={`p-3 rounded-lg transition-colors ${
+          className={`p-3 md:w-[5%] w-full flex justify-center rounded-lg transition-colors ${
             isListening
               ? 'bg-red-500 hover:bg-red-600 text-white'
               : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-700'
@@ -186,7 +186,7 @@ const TodoForm = ({ addTodo }) => {
 
         <button
           type='submit'
-          className='bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity'
+          className='flex justify-center md:w-[10%] w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity'
         >
           Add
         </button>
